@@ -43,5 +43,6 @@ app.layout = html.Div([
 ], id='mainContainer', style={'display': 'flex', 'flex-direction': 'column'})
 
 if __name__ == '__main__':
+
     app.run(debug=True, host='127.0.0.1', port=8050)
     
