@@ -15,15 +15,15 @@ df = pd.read_csv('Covid19VacunasAgrupadas.csv')
 df['jurisdiccion_nombre'] = df['jurisdiccion_nombre'].replace(NAME_FIXES)
 
 DOSE_COLUMNS = [
-    ('primera_dosis_cantidad', 'Primera dosis', '#3B82F6'),
-    ('segunda_dosis_cantidad', 'Segunda dosis', '#8B5CF6'),
-    ('dosis_unica_cantidad', 'Dosis única', '#2FBF9F'),
-    ('dosis_adicional_cantidad', 'Dosis adicional', '#F59E0B'),
-    ('dosis_refuerzo_cantidad', 'Refuerzo', '#EC4899'),
+    ('primera_dosis_cantidad', 'Primera dosis', '#3B82F6', '1'),
+    ('segunda_dosis_cantidad', 'Segunda dosis', '#8B5CF6', '2'),
+    ('dosis_unica_cantidad', 'Dosis única', '#2FBF9F', 'U'),
+    ('dosis_adicional_cantidad', 'Dosis adicional', '#F59E0B', '+'),
+    ('dosis_refuerzo_cantidad', 'Refuerzo', '#EC4899', 'R'),
 ]
-DOSE_LABELS = {col: label for col, label, _ in DOSE_COLUMNS}
+DOSE_LABELS = {col: label for col, label, _, _ in DOSE_COLUMNS}
 
-df_agg = df.groupby('jurisdiccion_nombre', as_index=False)[[c for c, _, _ in DOSE_COLUMNS]].sum()
+df_agg = df.groupby('jurisdiccion_nombre', as_index=False)[[c for c, _, _, _ in DOSE_COLUMNS]].sum()
 
 TEAL_SCALE = ['#CDEDE3', '#8FE3D0', '#2FBF9F', '#1B8073', '#0F4C43']
 PIE_COLORS = ['#2FBF9F', '#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6', '#6366F1', '#F97316', '#94A3B8']
@@ -95,10 +95,13 @@ def make_pie_figure(col):
     return style_fig(fig, f'Distribución de {label.lower()}')
 
 
-def kpi_card(col, label, color):
+def kpi_card(col, label, color, badge):
     total = int(df[col].sum())
     return html.Div(className='kpi-card', style={'--kpi-color': color}, children=[
-        html.P(label, className='kpi-label'),
+        html.Div(className='kpi-top', children=[
+            html.Div(badge, className='kpi-icon'),
+            html.P(label, className='kpi-label'),
+        ]),
         html.P(fmt_number(total), className='kpi-value'),
     ])
 
@@ -108,7 +111,9 @@ app = Dash(__name__, title='Vacunados por Covid')
 app.layout = html.Div(className='app-container', children=[
     html.Div(className='header', children=[
         html.Div(className='header-content', children=[
-            html.Img(src='assets/vacuna.png', className='header-icon'),
+            html.Div(className='header-icon-badge', children=[
+                html.Img(src='assets/vacuna.png', className='header-icon'),
+            ]),
             html.Div([
                 html.H1('Vacunación COVID-19', className='header-title'),
                 html.P('Seguimiento de dosis aplicadas por jurisdicción en Argentina', className='header-subtitle'),
@@ -117,15 +122,17 @@ app.layout = html.Div(className='app-container', children=[
     ]),
 
     html.Div(className='main-content', children=[
+        html.P('Resumen general', className='section-title'),
         html.Div(className='kpi-row', children=[
-            kpi_card(col, label, color) for col, label, color in DOSE_COLUMNS
+            kpi_card(col, label, color, badge) for col, label, color, badge in DOSE_COLUMNS
         ]),
 
+        html.P('Detalle por jurisdicción', className='section-title'),
         html.Div(className='card filter-card', children=[
             html.P('Selecciona el tipo de dosis', className='filter-label'),
             dcc.RadioItems(
                 id='dosis-radioItems',
-                options=[{'label': label, 'value': col} for col, label, _ in DOSE_COLUMNS],
+                options=[{'label': label, 'value': col} for col, label, _, _ in DOSE_COLUMNS],
                 value='primera_dosis_cantidad',
                 className='pill-radio',
                 inputClassName='pill-radio-input',
